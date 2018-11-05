@@ -61,6 +61,7 @@ def run(worker_no, roms_path, learning_rate, frames_per_step, cluster, data_bins
                 game_done = False
                 current_round = 0
                 total_reward = 0
+                gc.collect()
 
                 while not game_done:
 
@@ -101,19 +102,33 @@ def run(worker_no, roms_path, learning_rate, frames_per_step, cluster, data_bins
                     rewards[current_round]["mode"].append(mode)
 
                     if round_done:
+                        gc.collect()
                         if game_done:
                             rewards = wu.compile_rewards(rewards)
                             all_observations, all_move_actions, all_modes = data_bins.empty_move_bin(worker_no)
                             mode_network.train(sess, all_observations, all_modes, rewards[0])
                             move_network.train(sess, all_observations, all_move_actions, rewards[0])
+                            all_observations = None
+                            all_move_actions = None
+                            all_modes = None
+                            gc.collect()
 
                             all_observations, all_attack_actions, all_modes = data_bins.empty_attack_bin(worker_no)
                             mode_network.train(sess, all_observations, all_modes, rewards[1])
                             attack_network.train(sess, all_observations, all_attack_actions, rewards[1])
+                            all_observations = None
+                            all_attack_actions = None
+                            all_modes = None
+                            gc.collect()
 
                             all_observations, all_move_actions, all_attack_actions, all_modes = data_bins.empty_move_attack_bin(worker_no)
                             mode_network.train(sess, all_observations, all_modes, rewards[2])
                             move_attack_network.train(sess, all_observations, all_move_actions, all_attack_actions, rewards[2])
+                            all_observations = None
+                            all_move_actions = None
+                            all_attack_actions = None
+                            all_modes = None
+                            gc.collect()
 
                             sess.run(update_local_ops)
                             stats.update({"score": total_reward, "stage": env.stage})

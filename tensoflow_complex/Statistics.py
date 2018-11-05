@@ -7,11 +7,11 @@ class Statistics(object):
     def __init__(self, episode):
         self.lock = Lock()
         self.episode = Value("i", episode)
-        self.has_run = Value("i", 0)
-        self.best_score = Value("d", 0)
-        self.running_score = Value("d", 0)
-        self.best_stage = Value("d", 0)
-        self.running_stage = Value("d", 0)
+        self.has_run = Value("i", 1)
+        self.best_score = Value("d", 1516)
+        self.running_score = Value("d", 800.4)
+        self.best_stage = Value("d", 10)
+        self.running_stage = Value("d", 6.2)
 
     def update(self, reward):
         with self.lock:

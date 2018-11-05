@@ -1,13 +1,10 @@
 # Playing Street Fighter with Deep Reinforcement Learning
 
 For my final year project as Aston university I developed the MAMEToolkit library to train reinforcement learning algorithms against arcade games.
-Along with the library I created some ConvNet agents trained using Policy Gradient to Street Fighter. The repository contains the implementations of these agents.
+Along with the library I created some ConvNet agents trained using Policy Gradients on Street Fighter. The repository contains the implementations of these agents.
 
 ## PyTorch Dissertation Implementation
-This project demonstrates how a ConvNet can be used with Policy Gradients to play Street Fighter. 
-Although we could see performance improvement, not enough time was spent on training the agent with different hyper-parameters. 
-Given more time, it would have been interesting to explore how adjusting the amount of neurons and the amount of layers would affect the agent’s performance.
-
+This implementation first demonstrated that a ConvNet can be used with Policy Gradients to play Street Fighter. 
 It was interesting to observe how the agents learnt to play in story mode against an array of characters, 
 especially seeing how their behaviour evolved over time relative to the games mechanics. 
 In Street Fighter, there is the “blocking” mechanic, which allows a player to avoid taking damage if used correctly. 
@@ -28,9 +25,7 @@ This would mean that when the combo was successful, then the agent would have an
 although this may be undermined by policy gradients being an on-policy algorithm.
 There was also the concern that when frames were being pre-processed and given to the agent, 
 that it would reduce the agents ability to recognise its opponent from the background. 
-This was because not only were the frames being cropped and converted to black and white, but it was also being down sampled by a factor of 3 (see figure 18).
- Given more time, it would have been interesting to apply a deconvolutional network to see how the network was able to recognise characters (Zeiler and Fergus, 2014), 
- because not only does the agent not have colours to go by, but the characters deform and change shape very frequently when using different attacks. 
+This was because not only were the frames being cropped and converted to black and white, but it was also being down sampled by a factor of 3 (see figure below).
 
 
 ![Frame qualities](pics/downsampling.png)
@@ -48,20 +43,54 @@ This is because when an action is selected, it will cause a non-cancellable char
 thus, any actions made by the agent during this animation would be useless to the gameplay. 
 As the agent was not able to perfect its timing, it seemed to choose attacks based on whether the opponent was low, high, or in the air, regardless of how far away. 
 
-Although the agent was attacking every 10th of a second which lead to other wasted attack opportunities, it would have been more successful if it had waited for an opportune moment to attack. However, this was not be possible due to the way the action distributions were set up. For an agent to continuously block until an appropriate moment to attack, it would need to choose the appropriate move action and the “do nothing” attack action at the same time. However, as the agent has to choose one move action out of a possible 9, and one attack action out of a possible 10 every time step (see appendix M), if we assume all actions are equally likely to be chosen before training, then the chances of selecting the appropriate attack and movement action would be 1 in 90 every time step. The probability of this occurring continuously over many time steps until the agent selected a positively rewarded attack it is extremely low. With more time it would be interesting to design an agent which was able to move more freely around while defending itself and waiting for the opportune time to attack. This could have been achieved by using multiple networks, where one network is trained to only move around, getting rewarded for defending itself, while another network would be trained to attack and move so that it can perform all combos, getting rewards for causing damage. Finally a third network could sit atop the other two, perfecting the timings of selecting the correct network to produce the best action. 
+Although the agent was attacking every 10th of a second which lead to other wasted attack opportunities, 
+it would have been more successful if it had waited for an opportune moment to attack. 
+However, this was not be possible due to the way the action distributions were set up. 
+For an agent to continuously block until an appropriate moment to attack, 
+it would need to choose the appropriate move action and the “do nothing” attack action at the same time. 
+However, as the agent has to choose one move action out of a possible 9, and one attack action out of a possible 10 every time step, 
+if we assume all actions are equally likely to be chosen before training, then the chances of selecting the appropriate attack and movement action would be 1 in 90 every time step. 
+The probability of this occurring continuously over many time steps until the agent selected a positively rewarded attack it is extremely low. 
+With more time it would be interesting to design an agent which was able to move more freely around while defending itself and waiting for the opportune time to attack. 
+This could have been achieved by using multiple networks, where one network is trained to only move around, getting rewarded for defending itself, 
+while another network would be trained to attack and move so that it can perform all combos, getting rewards for causing damage. 
+Finally a third network could sit atop the other two, perfecting the timings of selecting the correct network to produce the best action. 
 
-![Results of training](pics/chart.png)
+After over 2000 playthroughs the agent slowly stopped making progress, and was able to consistently reach stage 5 of story mode, even
+making it to the final boss at stage 10 a couple of times. However, as it took so long to get to
+this point, that there wasn’t enough time to explore adjusting the parameters of the
+convolution to maximise the agent’s ability to play the game.
+
+![Results of PyTorch training](pics/chart.png)
+A graph demonstrating the performance of the PyTorch agent over time.
 
 The example implementation can be found here:
 **[PyTorch Implementation](pytorch)**
 
 ## TensorFlow Re-implementation
 After I graduated I decided to learn TensorFlow. I decided the best way to learn it would be to re-implement my PyTorch implementation using TensorFlow.
-Developing the same agent using both libraries gave some great insight into the different approaches to calculating the gradients required for back propagation.
-As PyTorch uses symbol-to-number differentiation, where TensorFlow uses symbol-to-symbol differentiation.
+Developing the same agent using both libraries helped me understand the different approaches to calculating the gradients required for back propagation (PyTorch uses symbol-to-number differentiation, where TensorFlow uses symbol-to-symbol differentiation).
 It also taught me the difficulties of efficient training using multiple-processes. PyTorch handles a lot of that behind the scenes, but TensorFlow requires a lot more work be done defining exactly how network parameters should be updated and when.
 
 The example implementation can be found here:
 **[TensorFlow Simple Implementation](tensorflow_simple)**
 
 ## TensorFlow Complex Implementation
+In an attempt to improve the performance of my agents, I linked together 4 identical networks which were all trained on different aspects of the game.
+The priorities of the networks are as follows:
+1) Move Network - Only generates outputs responsible for moving a character. Import for blocking.
+2) Attack Network - Only generates outputs responsible for attacking with the character. Important for combos where the character doesn't move 
+3) Move & Attack Network - Only generates outputs responsible for attacks which involve a move action
+4) Mode Network - A gate keeping network with 3 outputs. Used to choose which network should generate the output for the current frame.
+
+The networks were trained using a separate history each. Where each network only saw observations and actions that it was involved in. 
+For example, the mode network saw the entirety of the history, as it was used at every step to choose an action,
+but the other 3 networks only saw the game state for which the mode network chose them.
+
+This agent was quite a bit more successful, being able to reach an average stage of 6.5 after 2000 playthroughs.
+
+![Results of complex TensorFlow training](pics/chart2.png)
+A graph demonstrating the performance of the complex  agent over time.
+
+The example implementation can be found here:
+**[TensorFlow Complex Implementation](tensoflow_complex)**

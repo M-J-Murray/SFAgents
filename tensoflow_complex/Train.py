@@ -39,6 +39,6 @@ if __name__ == '__main__':
           learning_rate=5e-5,
           worker_count=4,
           frames_per_step=3,
-          episode=0,
+          episode=1200,
           save_frequency=100,
           saves_path="saves")

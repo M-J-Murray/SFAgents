@@ -1,13 +1,15 @@
-from Main.Agent.TensorflowMulti.Model.NetworkUtils import *
+from tensoflow_complex.model.NetworkUtils import *
 
 
 class MoveNetwork(object):
 
-    def __init__(self, scope, optim=None, frames_per_step=3, move_classes=8, criterion=tf.losses.softmax_cross_entropy, batch_size=128):
+    def __init__(self, scope, learning_rate, frames_per_step=3, move_classes=8, optim=tf.train.AdamOptimizer, criterion=tf.losses.softmax_cross_entropy, batch_size=128):
         self.move_classes = move_classes
 
         with tf.variable_scope(scope):
             with tf.variable_scope("move"):
+                self.optim = optim(learning_rate, name="move_optim")
+
                 self.conv1 = init_conv("conv1", frames_per_step, 12)
                 self.conv2 = init_conv("conv2", 12, 24)
                 self.conv3 = init_conv("conv3", 24, 36)
@@ -15,13 +17,13 @@ class MoveNetwork(object):
                 self.conv5 = init_conv("conv5", 36, 24)
                 self.fc = init_weights("fc", [24*1*3, move_classes])
 
-        if optim:
+        if scope is not "global":
             self.observation_sym = tf.placeholder(tf.float32, [None, 61, 120, frames_per_step])
             self.move_action_sym = tf.placeholder(tf.float32, [None, move_classes])
             self.reward_sym = tf.placeholder(tf.float32, [None])
 
             self.move_out_sym = tf.nn.softmax(self.eval(self.observation_sym), axis=1)
-            self.zero_ops, self.accum_ops, self.train_step = train(optim, self.loss(criterion), scope, "move")
+            self.zero_ops, self.accum_ops, self.train_step = train(self.optim, self.loss(criterion), scope, "move")
 
             dataset = tf.data.Dataset.from_tensor_slices((self.observation_sym,
                                                           self.move_action_sym,
